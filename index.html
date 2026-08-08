@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0b1220">
+<title>Billar 3B · Entrenador</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{
+  --bg:#0b1220; --bg2:#111a2e; --card:#17233c; --card2:#1d2b48;
+  --text:#e8edf7; --muted:#8fa0bd; --line:#263654;
+  --acc:#31c48d; --acc2:#2563eb; --warn:#f59e0b; --bad:#ef4444;
+  --r:14px;
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}
+body{padding-bottom:calc(64px + env(safe-area-inset-bottom))}
+button{font-family:inherit}
+.hidden{display:none !important}
+#topbar{position:sticky;top:0;z-index:20;background:linear-gradient(180deg,var(--bg) 80%,transparent);padding:14px 16px 8px;display:flex;align-items:center;gap:10px}
+#topbar h1{font-size:18px;margin:0;font-weight:700;letter-spacing:.2px}
+#topbar .sub{color:var(--muted);font-size:12px;margin-left:auto}
+#tabs{position:fixed;bottom:0;left:0;right:0;z-index:30;display:flex;background:rgba(13,20,36,.97);backdrop-filter:blur(8px);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+#tabs button{flex:1;background:none;border:0;color:var(--muted);padding:9px 0 7px;font-size:11px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer}
+#tabs button.on{color:var(--acc)}
+#tabs svg{width:22px;height:22px}
+main{padding:0 14px;max-width:760px;margin:0 auto}
+.h2{font-size:15px;font-weight:700;margin:18px 2px 10px;color:var(--text)}
+.mut{color:var(--muted);font-size:13px}
+.cardbox{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin-bottom:12px}
+.btn{border:0;border-radius:12px;padding:13px 16px;font-size:15px;font-weight:700;cursor:pointer;color:#fff;background:var(--card2)}
+.btn.acc{background:var(--acc);color:#07130d}
+.btn.blue{background:var(--acc2)}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--text)}
+.btn:active{transform:scale(.97)}
+.row{display:flex;gap:10px}
+.row .btn{flex:1}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--line);background:var(--card);color:var(--muted);border-radius:99px;padding:7px 13px;font-size:13px;cursor:pointer;user-select:none}
+.chip.on{background:var(--acc);border-color:var(--acc);color:#07130d;font-weight:700}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.statn{font-size:26px;font-weight:800}
+.statl{font-size:12px;color:var(--muted)}
+/* listas / tarjetas */
+.syscard{display:flex;gap:12px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:10px;margin-bottom:10px;cursor:pointer}
+.syscard img{width:84px;height:60px;object-fit:cover;border-radius:8px;background:#0a3;flex:none}
+.syscard .noimg{width:84px;height:60px;border-radius:8px;background:var(--card2);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:11px;flex:none}
+.syscard .t{font-weight:700;font-size:14px;line-height:1.25}
+.syscard .s{color:var(--muted);font-size:12px;margin-top:3px}
+.lbl{display:inline-block;border-radius:6px;padding:1px 7px;font-size:11px;font-weight:700;margin-right:5px;background:var(--card2);color:var(--muted)}
+.lbl.green_light,.lbl.green{background:#14532d;color:#86efac}
+.lbl.purple{background:#4c1d95;color:#d8b4fe}
+.lbl.red{background:#7f1d1d;color:#fecaca}
+.lbl.yellow,.lbl.orange{background:#78350f;color:#fde68a}
+.lbl.blue,.lbl.sky{background:#1e3a8a;color:#bfdbfe}
+/* detalle tarjeta */
+#detail{position:fixed;inset:0;z-index:40;background:var(--bg);overflow-y:auto;padding-bottom:40px}
+#detail .head{position:sticky;top:0;background:var(--bg);padding:12px 14px;display:flex;gap:10px;align-items:center;z-index:5;border-bottom:1px solid var(--line)}
+#detail .head .t{font-weight:800;font-size:16px;line-height:1.2}
+#detail .body{padding:12px 14px;max-width:760px;margin:0 auto}
+.imgstrip{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;border-radius:12px}
+.imgstrip img{max-height:52vh;max-width:96%;border-radius:12px;scroll-snap-align:center;cursor:zoom-in;object-fit:contain;background:#000}
+.blurimg{filter:blur(14px) saturate(.8);transform:scale(1.02);pointer-events:none}
+.desc{white-space:pre-wrap;font-size:14px;line-height:1.5;color:#cdd8ec}
+.comment{background:var(--card);border-left:3px solid var(--acc);border-radius:8px;padding:9px 12px;margin:8px 0;font-size:13.5px;white-space:pre-wrap;color:#cdd8ec}
+.backbtn{background:var(--card2);border:0;color:var(--text);border-radius:10px;width:38px;height:38px;font-size:19px;cursor:pointer;flex:none}
+/* visor imagen */
+#zoom{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.96);display:flex;align-items:center;justify-content:center}
+#zoom img{max-width:100vw;max-height:100vh;object-fit:contain}
+#zoom .x{position:fixed;top:14px;right:14px;z-index:61}
+/* player */
+.vwrap{position:relative;padding-bottom:56.25%;height:0;background:#000;border-radius:12px;overflow:hidden}
+.vwrap iframe,.vwrap #ytp{position:absolute;inset:0;width:100%;height:100%}
+.vcover{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#000;color:var(--muted);z-index:3;font-size:14px;flex-direction:column;gap:8px}
+.stars{color:#fbbf24;letter-spacing:2px}
+.pillrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0}
+.pill{background:var(--card2);border-radius:8px;padding:4px 10px;font-size:12px;color:var(--muted)}
+.gradebtns{display:flex;gap:8px;margin-top:12px}
+.gradebtns .btn{flex:1;padding:12px 4px;font-size:14px}
+.gb-again{background:#7f1d1d}
+.gb-hard{background:#78350f}
+.gb-good{background:#14532d}
+.notes{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13.5px;white-space:pre-wrap;color:#cdd8ec;margin-top:10px}
+.progressbar{height:8px;background:var(--card2);border-radius:99px;overflow:hidden}
+.progressbar>div{height:100%;background:var(--acc);width:0%}
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#000c;border:1px solid var(--line);padding:9px 16px;border-radius:99px;font-size:13px;z-index:70}
+input[type=search]{width:100%;background:var(--card);border:1px solid var(--line);border-radius:10px;color:var(--text);padding:11px 13px;font-size:14px;outline:none}
+</style>
+</head>
+<body>
+
+<div id="topbar"><h1 id="pagetitle">Entrenar</h1><span class="sub" id="duecount"></span></div>
+<main id="main"></main>
+
+<nav id="tabs">
+  <button data-tab="train" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg>Entrenar</button>
+  <button data-tab="video"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="3"/><polygon points="10 9 15 12 10 15" fill="currentColor"/></svg>Jugadas</button>
+  <button data-tab="sys"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg>Sistemas</button>
+  <button data-tab="stats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 20h18"/><rect x="5" y="12" width="3" height="8"/><rect x="10.5" y="7" width="3" height="13"/><rect x="16" y="3" width="3" height="17"/></svg>Progreso</button>
+  <button data-tab="cfg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a7.9 7.9 0 0 0 .1-6l-2.1-.5a6 6 0 0 0-1.2-2l.6-2.1a8 8 0 0 0-5.2-2.1l-1 1.9a6 6 0 0 0-2.3.6L6.4 3.5A8 8 0 0 0 3 7.9l1.7 1.3a6 6 0 0 0 0 2.4L3 13a8 8 0 0 0 3.4 4.4l1.9-1.2a6 6 0 0 0 2.3.6l1 1.9a8 8 0 0 0 5.2-2.1l-.6-2.1a6 6 0 0 0 1.2-2z"/></svg>Ajustes</button>
+</nav>
+
+<script>
+'use strict';
+// ============================== estado global ==============================
+let DB=null;              // data.json
+let P={};                 // progreso SRS {key:{i,e,due,r,l,fav}}
+let SESSION=[];           // cola de entrenamiento actual
+let SESSIONIDX=0;
+let ytPlayer=null, ytReady=false, playerMode='pos', currentSeq=null, currentList=null, currentCard=null;
+let videoPool=[], videoIdx=0;
+const $=q=>document.querySelector(q), $$=q=>[...document.querySelectorAll(q)];
+const LKEY='billar3b_progress_v1', FKEY='billar3b_filters_v1';
+
+function loadP(){try{P=JSON.parse(localStorage.getItem(LKEY))||{}}catch(e){P={}}}
+function saveP(){localStorage.setItem(LKEY,JSON.stringify(P))}
+let FILTERS={lists:[],lvl:0,onlySys:false};
+function loadF(){try{FILTERS=Object.assign(FILTERS,JSON.parse(localStorage.getItem(FKEY))||{})}catch(e){}}
+function saveF(){localStorage.setItem(FKEY,JSON.stringify(FILTERS))}
+
+// ============================== SRS ==============================
+const DAY=86400000;
+function getSt(k){return P[k]||{i:0,e:2.3,due:0,r:0,l:0}}
+function grade(k,g){ // g: 0 otra vez, 1 difícil, 2 bien
+  const s=getSt(k); const now=Date.now();
+  if(g===0){s.l++; s.i=0; s.due=now+600000; }
+  else if(g===1){s.i=Math.max(1,Math.round((s.i||1)*1.2)); s.e=Math.max(1.5,s.e-.15); s.due=now+s.i*DAY;}
+  else{s.i=s.i?Math.round(s.i*s.e):1; s.e=Math.min(2.8,s.e+.05); s.due=now+s.i*DAY;}
+  s.r++; s.last=now; P[k]=s; saveP(); updateDue();
+}
+function dueItems(){
+  const now=Date.now(); const out=[];
+  for(const c of DB.cards){ if(P[c.id] && P[c.id].due<=now) out.push({t:'card',id:c.id}); }
+  for(const s of DB.seqs){ if(P[s.id] && P[s.id].due<=now) out.push({t:'seq',id:s.id}); }
+  return out;
+}
+function seenCount(){return Object.keys(P).filter(k=>P[k].r>0).length}
+function updateDue(){ if(!DB) return; $('#duecount').textContent = dueItems().length+' pendientes'; }
+
+// ============================== filtros ==============================
+function cardPassesFilter(c){ return !FILTERS.lists.length || FILTERS.lists.includes(c.list); }
+function seqPassesFilter(s){
+  if(FILTERS.lvl && (s.lvl||1)!==FILTERS.lvl) return false;
+  if(FILTERS.onlySys && !s.card) return false;
+  if(FILTERS.lists.length){
+    if(!s.card) return false;
+    const c=DB.cards.find(c=>c.id===s.card);
+    if(!c || !FILTERS.lists.includes(c.list)) return false;
+  }
+  return true;
+}
+
+// ============================== YouTube ==============================
+function ensureYT(cb){
+  if(ytReady){cb();return}
+  window.onYouTubeIframeAPIReady=()=>{ytReady=true;cb();};
+  if(!document.getElementById('ytapi')){
+    const s=document.createElement('script'); s.id='ytapi'; s.src='https://www.youtube.com/iframe_api';
+    document.head.appendChild(s);
+  }
+}
+function playClip(vid,start,end){
+  const create=()=>{
+    if(ytPlayer){ ytPlayer.loadVideoById({videoId:vid,startSeconds:start,endSeconds:end}); return;}
+    ytPlayer=new YT.Player('ytp',{width:'100%',height:'100%',
+      playerVars:{playsinline:1,controls:1,rel:0,modestbranding:1},
+      events:{onReady:()=>ytPlayer.loadVideoById({videoId:vid,startSeconds:start,endSeconds:end})}});
+  };
+  ensureYT(create);
+}
+
+// ============================== vistas ==============================
+const TABS={train:'Entrenar',video:'Jugadas',sys:'Sistemas',stats:'Progreso',cfg:'Ajustes'};
+let TAB='train';
+$$('#tabs button').forEach(b=>b.onclick=()=>{switchTab(b.dataset.tab)});
+function switchTab(t){
+  TAB=t; $$('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
+  $('#pagetitle').textContent=TABS[t];
+  destroyPlayer();
+  render();
+}
+function destroyPlayer(){ if(ytPlayer){try{ytPlayer.destroy()}catch(e){}; ytPlayer=null;} }
+
+function render(){
+  const m=$('#main');
+  if(TAB==='train') renderTrain(m);
+  else if(TAB==='video') renderVideo(m);
+  else if(TAB==='sys') renderSys(m);
+  else if(TAB==='stats') renderStats(m);
+  else renderCfg(m);
+}
+
+// ---------- ENTRENAR ----------
+function chipsHTML(){
+  return `<div class="h2">Filtros</div>
+  <div class="chips" id="fchips">
+    ${DB.lists.map(l=>`<span class="chip ${FILTERS.lists.includes(l.key)?'on':''}" data-l="${l.key}">${l.title.split('·')[0].trim()}</span>`).join('')}
+  </div>`;
+}
+function bindChips(cb){
+  $$('#fchips .chip').forEach(ch=>ch.onclick=()=>{
+    const k=ch.dataset.l;
+    const i=FILTERS.lists.indexOf(k);
+    if(i>=0)FILTERS.lists.splice(i,1); else FILTERS.lists.push(k);
+    saveF(); ch.classList.toggle('on'); if(cb)cb();
+  });
+}
+function renderTrain(m){
+  const due=dueItems().length;
+  const nc=DB.cards.filter(cardPassesFilter).length;
+  const ns=DB.seqs.filter(seqPassesFilter).length;
+  m.innerHTML=`
+  <div class="cardbox">
+    <div class="grid2">
+      <div><div class="statn">${due}</div><div class="statl">para repasar hoy</div></div>
+      <div><div class="statn">${seenCount()}</div><div class="statl">jugadas trabajadas</div></div>
+    </div>
+  </div>
+  ${chipsHTML()}
+  <div class="h2">Sesión</div>
+  <div class="row" style="margin-bottom:10px">
+    <button class="btn acc" id="b-smart">🧠 Repaso inteligente</button>
+  </div>
+  <div class="row">
+    <button class="btn blue" id="b-rndsys">🎲 Sistemas (${nc})</button>
+    <button class="btn blue" id="b-rndvid">🎬 Vídeos (${ns})</button>
+  </div>
+  <p class="mut" style="margin-top:14px">El repaso inteligente prioriza lo pendiente y mezcla flashcards de sistemas con secuencias de vídeo. Marca al final de cada jugada si la sabías: la app se encarga de volver a mostrártela en el momento justo.</p>`;
+  bindChips(()=>renderTrain(m));
+  $('#b-smart').onclick=()=>startSession('smart');
+  $('#b-rndsys').onclick=()=>startSession('sys');
+  $('#b-rndvid').onclick=()=>startSession('vid');
+}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function startSession(kind){
+  let items=[];
+  if(kind==='smart'){
+    const due=shuffle(dueItems().filter(it=> it.t==='card'? cardPassesFilter(DB.cards.find(c=>c.id===it.id)) : seqPassesFilter(DB.seqs.find(s=>s.id===it.id))));
+    const newSys=shuffle(DB.cards.filter(c=>cardPassesFilter(c)&&!P[c.id]).map(c=>({t:'card',id:c.id})));
+    const newSeq=shuffle(DB.seqs.filter(s=>seqPassesFilter(s)&&!P[s.id]).map(s=>({t:'seq',id:s.id})));
+    const fresh=[]; // intercalar
+    while((newSys.length||newSeq.length)&&fresh.length<40){ if(newSeq.length)fresh.push(newSeq.pop()); if(newSys.length)fresh.push(newSys.pop()); }
+    items=due.concat(fresh).slice(0,50);
+  }else if(kind==='sys'){
+    items=shuffle(DB.cards.filter(cardPassesFilter).map(c=>({t:'card',id:c.id}))).slice(0,50);
+  }else{
+    items=shuffle(DB.seqs.filter(seqPassesFilter).map(s=>({t:'seq',id:s.id}))).slice(0,80);
+  }
+  if(!items.length){toast('No hay jugadas con esos filtros');return}
+  SESSION=items; SESSIONIDX=0;
+  showSessionItem();
+}
+function showSessionItem(){
+  if(SESSIONIDX>=SESSION.length){ closeDetail(); toast('Sesión completada 🎉'); switchTab('train'); return; }
+  const it=SESSION[SESSIONIDX];
+  if(it.t==='card') openFlashcard(DB.cards.find(c=>c.id===it.id));
+  else openSeqTrainer(DB.seqs.find(s=>s.id===it.id));
+}
+
+// ---------- flashcard de sistema ----------
+function openFlashcard(c){
+  currentCard=c;
+  const cover=c.images.find(i=>i.cover)||c.images[0];
+  const d=getOverlay();
+  d.innerHTML=`
+  <div class="head"><button class="backbtn" id="fc-x">✕</button>
+    <div><div class="t">${esc(cardTitle(c))}</div><div class="mut">${listTitle(c.list)} · ${SESSIONIDX+1}/${SESSION.length}</div></div></div>
+  <div class="body">
+    ${cover?`<div class="imgstrip" style="overflow:hidden"><img id="fc-cover" class="blurimg" src="img/${cover.f}"></div>`:''}
+    <div class="pillrow">${c.labels.map(l=>`<span class="lbl ${l}">${esc(l)}</span>`).join('')}</div>
+    <div id="fc-q" style="margin-top:6px">
+      <p class="mut">Se intuye la posición, pero no el sistema. ¿Recuerdas cómo se juega? Cálculo, efecto, velocidad, zona de llegada…</p>
+      <button class="btn acc" style="width:100%" id="fc-show">Mostrar solución</button>
+    </div>
+    <div id="fc-a" class="hidden">
+      ${c.desc?`<div class="h2">Sistema</div><div class="desc">${md(c.desc)}</div>`:''}
+      ${c.images.length>1?`<div class="h2">Diagramas (${c.images.length})</div><div class="imgstrip">${c.images.map(i=>`<img loading="lazy" src="img/${i.f}" onclick="openZoom(this.src)">`).join('')}</div>`:''}
+      ${c.comments.length?`<div class="h2">Comentarios</div>${c.comments.map(t=>`<div class="comment">${md(t)}</div>`).join('')}`:''}
+      ${c.videos.length?`<div class="h2">Vídeos</div><div class="row">${c.videos.slice(0,3).map((v,i)=>`<button class="btn ghost" onclick="openCardVideo('${v}')">▶ Vídeo ${i+1}</button>`).join('')}</div>`:''}
+      <div class="gradebtns">
+        <button class="btn gb-again" id="g0">✗ Fallo</button>
+        <button class="btn gb-hard" id="g1">~ Dudosa</button>
+        <button class="btn gb-good" id="g2">✓ La sé</button>
+      </div>
+    </div>
+  </div>`;
+  $('#fc-x').onclick=()=>{closeDetail(); switchTab('train')};
+  $('#fc-show').onclick=()=>{
+    $('#fc-q').classList.add('hidden');$('#fc-a').classList.remove('hidden');
+    const cv=$('#fc-cover'); if(cv){cv.classList.remove('blurimg');cv.style.pointerEvents='';cv.onclick=()=>openZoom(cv.src);}
+  };
+  ['g0','g1','g2'].forEach((id,g)=>$('#'+id).onclick=()=>{grade(c.id,g);SESSIONIDX++;showSessionItem()});
+  window.scrollTo(0,0);
+}
+function openCardVideo(v){ openZoomHTML(`<div class="vwrap" style="width:96vw;max-width:900px"><iframe src="https://www.youtube.com/embed/${v}?rel=0" allowfullscreen frameborder="0"></iframe></div>`); }
+
+// ---------- entrenador de secuencia (vídeo) ----------
+function openSeqTrainer(s){
+  currentSeq=s; playerMode='pos';
+  const card=s.card?DB.cards.find(c=>c.id===s.card):null;
+  const d=getOverlay();
+  d.innerHTML=`
+  <div class="head"><button class="backbtn" id="sq-x">✕</button>
+    <div><div class="t">${card?esc(cardTitle(card)):'Jugada '+s.id.slice(1)}</div>
+    <div class="mut">${card?listTitle(card.list)+' · ':''}${s.src} · ${SESSIONIDX+1}/${SESSION.length||1}</div></div></div>
+  <div class="body">
+    <div class="vwrap"><div id="ytp"></div></div>
+    <div class="pillrow">
+      <span class="pill" id="sq-mode">POSICIÓN</span>
+      <span class="stars">${'★'.repeat(s.lvl||1)}</span>
+      ${card?`<button class="btn ghost" style="padding:5px 10px;font-size:12px" id="sq-sys">Ver sistema</button>`:''}
+    </div>
+    <div class="row">
+      <button class="btn acc" id="sq-sol">Ver solución</button>
+      <button class="btn ghost" id="sq-rep" style="flex:0 0 54px">↻</button>
+    </div>
+    <div id="sq-notes" class="notes hidden"></div>
+    <div class="gradebtns hidden" id="sq-grades">
+      <button class="btn gb-again" id="sg0">✗ Fallo</button>
+      <button class="btn gb-hard" id="sg1">~ Dudosa</button>
+      <button class="btn gb-good" id="sg2">✓ La sé</button>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button class="btn" id="sq-next">Saltar →</button>
+    </div>
+  </div>`;
+  playClip(s.v,s.ps,s.pe);
+  $('#sq-x').onclick=()=>{closeDetail();destroyPlayer();switchTab('train')};
+  $('#sq-rep').onclick=()=>{ const m=playerMode==='pos'; playClip(s.v, m?s.ps:s.ss, m?s.pe:s.se); };
+  $('#sq-sol').onclick=()=>{
+    if(playerMode==='pos'){
+      playerMode='sol'; $('#sq-mode').textContent='SOLUCIÓN'; $('#sq-sol').textContent='Ver posición';
+      playClip(s.v,s.ss,s.se);
+      if(s.notes){$('#sq-notes').textContent=s.notes;$('#sq-notes').classList.remove('hidden')}
+      $('#sq-grades').classList.remove('hidden');
+    }else{
+      playerMode='pos'; $('#sq-mode').textContent='POSICIÓN'; $('#sq-sol').textContent='Ver solución';
+      playClip(s.v,s.ps,s.pe);
+    }
+  };
+  if(card) $('#sq-sys').onclick=()=>openCardDetail(card,true);
+  ['sg0','sg1','sg2'].forEach((id,g)=>$('#'+id).onclick=()=>{grade(s.id,g);SESSIONIDX++;destroyPlayer();showSessionItem()});
+  $('#sq-next').onclick=()=>{SESSIONIDX++;destroyPlayer();showSessionItem()};
+  window.scrollTo(0,0);
+}
+
+// ---------- JUGADAS (modo vídeo libre) ----------
+function renderVideo(m){
+  const pool=DB.seqs.filter(seqPassesFilter);
+  m.innerHTML=`
+  ${chipsHTML()}
+  <div class="chips" style="margin-top:8px">
+    <span class="chip ${FILTERS.lvl===0?'on':''}" data-lvl="0">Todos</span>
+    <span class="chip ${FILTERS.lvl===1?'on':''}" data-lvl="1">★</span>
+    <span class="chip ${FILTERS.lvl===2?'on':''}" data-lvl="2">★★</span>
+    <span class="chip ${FILTERS.lvl===3?'on':''}" data-lvl="3">★★★</span>
+    <span class="chip ${FILTERS.onlySys?'on':''}" id="ch-sys">Solo con sistema</span>
+  </div>
+  <div class="h2">${pool.length} secuencias disponibles</div>
+  <div class="row">
+    <button class="btn acc" id="v-start">▶ Entrenar aleatorio</button>
+  </div>
+  <p class="mut" style="margin-top:12px">Cada secuencia muestra la posición de las bolas; piensa cómo la jugarías y comprueba la solución. Necesita conexión a internet (YouTube).</p>`;
+  bindChips(()=>renderVideo(m));
+  $$('[data-lvl]').forEach(ch=>ch.onclick=()=>{FILTERS.lvl=+ch.dataset.lvl;saveF();renderVideo(m)});
+  $('#ch-sys').onclick=()=>{FILTERS.onlySys=!FILTERS.onlySys;saveF();renderVideo(m)};
+  $('#v-start').onclick=()=>startSession('vid');
+}
+
+// ---------- SISTEMAS ----------
+function renderSys(m){
+  if(currentList) return renderCardList(m,currentList);
+  m.innerHTML=`
+  <input type="search" id="q" placeholder="Buscar jugada o sistema…">
+  <div id="qres"></div>
+  <div class="h2">Colecciones</div>
+  ${DB.lists.map(l=>`
+    <div class="syscard" data-k="${l.key}">
+      <div class="noimg">${l.key}</div>
+      <div><div class="t">${esc(l.title)}</div><div class="s">${esc(l.desc)} · ${l.count} tarjetas</div></div>
+    </div>`).join('')}`;
+  $$('.syscard[data-k]').forEach(el=>el.onclick=()=>{currentList=el.dataset.k;renderSys(m)});
+  $('#q').oninput=e=>{
+    const q=e.target.value.toLowerCase().trim();
+    const res=$('#qres');
+    if(q.length<2){res.innerHTML='';return}
+    const hits=DB.cards.filter(c=>(c.name+' '+c.desc).toLowerCase().includes(q)).slice(0,12);
+    res.innerHTML=hits.map(c=>cardRow(c)).join('')||'<p class="mut">Sin resultados</p>';
+    bindCardRows(res);
+  };
+}
+function cardRow(c){
+  const cover=c.images.find(i=>i.cover)||c.images[0];
+  const nseq=DB.seqs.filter(s=>s.card===c.id).length;
+  return `<div class="syscard cr" data-c="${c.id}">
+    ${cover?`<img loading="lazy" src="img/${cover.f}">`:`<div class="noimg">—</div>`}
+    <div><div class="t">${esc(cardTitle(c))}</div>
+    <div class="s">${c.labels.map(l=>`<span class="lbl ${l}">${esc(l)}</span>`).join('')}
+    ${c.images.length}📷 ${c.videos.length?c.videos.length+'🎬 ':''}${nseq?nseq+' secuencias':''}</div></div></div>`;
+}
+function bindCardRows(scope){ scope.querySelectorAll('.cr').forEach(el=>el.onclick=()=>openCardDetail(DB.cards.find(c=>c.id===el.dataset.c))); }
+function renderCardList(m,key){
+  const l=DB.lists.find(l=>l.key===key);
+  const cards=DB.cards.filter(c=>c.list===key);
+  m.innerHTML=`
+  <div style="display:flex;align-items:center;gap:10px;margin-top:6px">
+    <button class="backbtn" id="back">←</button><div><b>${esc(l.title)}</b><div class="mut" style="font-size:12px">${cards.length} tarjetas</div></div>
+  </div><div style="height:10px"></div>
+  ${cards.map(cardRow).join('')}`;
+  $('#back').onclick=()=>{currentList=null;renderSys(m)};
+  bindCardRows(m);
+}
+function openCardDetail(c,fromTrainer){
+  const d=getOverlay();
+  const nseq=DB.seqs.filter(s=>s.card===c.id);
+  d.innerHTML=`
+  <div class="head"><button class="backbtn" id="cd-x">←</button>
+    <div><div class="t">${esc(cardTitle(c))}</div><div class="mut">${listTitle(c.list)}</div></div></div>
+  <div class="body">
+    ${c.images.length?`<div class="imgstrip">${c.images.map(i=>`<img loading="lazy" src="img/${i.f}" onclick="openZoom(this.src)">`).join('')}</div>`:''}
+    <div class="pillrow">${c.labels.map(l=>`<span class="lbl ${l}">${esc(l)}</span>`).join('')}
+      ${c.images.length?`<span class="pill">${c.images.length} diagramas</span>`:''}</div>
+    ${c.desc?`<div class="h2">Sistema</div><div class="desc">${md(c.desc)}</div>`:''}
+    ${c.comments.length?`<div class="h2">Comentarios (${c.comments.length})</div>${c.comments.map(t=>`<div class="comment">${md(t)}</div>`).join('')}`:''}
+    ${c.videos.length?`<div class="h2">Vídeos</div><div class="chips">${c.videos.map((v,i)=>`<span class="chip" onclick="openCardVideo('${v}')">▶ Vídeo ${i+1}</span>`).join('')}</div>`:''}
+    ${nseq.length?`<div class="h2">Secuencias de entrenamiento (${nseq.length})</div>
+      <button class="btn blue" style="width:100%" id="cd-train">🎬 Entrenar estas secuencias</button>`:''}
+  </div>`;
+  $('#cd-x').onclick=()=>{ if(fromTrainer){ d.remove(); } else { closeDetail(); render(); } };
+  if(nseq.length) $('#cd-train').onclick=()=>{SESSION=shuffle(nseq.map(s=>({t:'seq',id:s.id})));SESSIONIDX=0;showSessionItem()};
+  window.scrollTo(0,0);
+}
+
+// ---------- PROGRESO ----------
+function renderStats(m){
+  const total=DB.cards.length+DB.seqs.length;
+  const seen=seenCount();
+  const due=dueItems().length;
+  const perList=DB.lists.map(l=>{
+    const cs=DB.cards.filter(c=>c.list===l.key);
+    const done=cs.filter(c=>P[c.id]&&P[c.id].r>0).length;
+    return {t:l.title,done,total:cs.length};
+  });
+  const hist={};
+  Object.values(P).forEach(s=>{ if(s.last){ const d=new Date(s.last).toISOString().slice(0,10); hist[d]=(hist[d]||0)+1; }});
+  const days=Object.keys(hist).sort().slice(-7);
+  m.innerHTML=`
+  <div class="cardbox"><div class="grid2">
+    <div><div class="statn">${seen}</div><div class="statl">de ${total} jugadas trabajadas</div></div>
+    <div><div class="statn">${due}</div><div class="statl">pendientes de repaso</div></div>
+  </div></div>
+  <div class="h2">Sistemas por colección</div>
+  ${perList.map(p=>`<div style="margin-bottom:10px">
+    <div style="display:flex;justify-content:space-between;font-size:13px"><span>${esc(p.t)}</span><span class="mut">${p.done}/${p.total}</span></div>
+    <div class="progressbar" style="margin-top:4px"><div style="width:${p.total?Math.round(p.done/p.total*100):0}%"></div></div>
+  </div>`).join('')}
+  <div class="h2">Últimos días</div>
+  ${days.length?days.map(d=>`<div style="display:flex;justify-content:space-between;font-size:13px;padding:5px 2px;border-bottom:1px solid var(--line)"><span class="mut">${d}</span><span>${hist[d]} repasos</span></div>`).join(''):'<p class="mut">Aún no hay actividad.</p>'}`;
+}
+
+// ---------- AJUSTES ----------
+function renderCfg(m){
+  m.innerHTML=`
+  <div class="h2">Modo offline</div>
+  <div class="cardbox">
+    <p class="mut" style="margin-top:0">Descarga todos los diagramas para entrenar sin conexión (aprox. 105 MB, solo la primera vez). Los vídeos de YouTube siempre necesitan internet.</p>
+    <button class="btn acc" id="dl-all" style="width:100%">⬇ Descargar imágenes</button>
+    <div class="progressbar hidden" id="dl-bar" style="margin-top:10px"><div></div></div>
+    <p class="mut hidden" id="dl-txt"></p>
+  </div>
+  <div class="h2">Progreso</div>
+  <div class="cardbox">
+    <div class="row">
+      <button class="btn ghost" id="p-exp">Exportar</button>
+      <button class="btn ghost" id="p-imp">Importar</button>
+      <button class="btn" style="background:#7f1d1d" id="p-del">Borrar</button>
+    </div>
+  </div>
+  <p class="mut">Entrenador de billar a 3 bandas construido a partir de tu tablero de Trello y tus listados de secuencias. v1.0</p>`;
+  $('#dl-all').onclick=cacheAllImages;
+  $('#p-exp').onclick=()=>{
+    const blob=new Blob([JSON.stringify(P)],{type:'application/json'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='billar_progreso.json';a.click();
+  };
+  $('#p-imp').onclick=()=>{
+    const i=document.createElement('input');i.type='file';i.accept='.json';
+    i.onchange=async()=>{try{P=JSON.parse(await i.files[0].text());saveP();updateDue();toast('Progreso importado')}catch(e){toast('Archivo no válido')}};
+    i.click();
+  };
+  $('#p-del').onclick=()=>{if(confirm('¿Borrar todo el progreso de entrenamiento?')){P={};saveP();updateDue();toast('Progreso borrado')}};
+}
+async function cacheAllImages(){
+  if(!('caches' in window)){toast('Tu navegador no soporta cache offline');return}
+  const files=[]; DB.cards.forEach(c=>c.images.forEach(i=>files.push('img/'+i.f)));
+  const cache=await caches.open('billar-img-v1');
+  const bar=$('#dl-bar'), txt=$('#dl-txt'); bar.classList.remove('hidden'); txt.classList.remove('hidden');
+  let done=0, fail=0;
+  const CONC=8;
+  for(let i=0;i<files.length;i+=CONC){
+    await Promise.all(files.slice(i,i+CONC).map(async f=>{
+      try{ const hit=await cache.match(f); if(!hit){ const r=await fetch(f); if(r.ok) await cache.put(f,r); else fail++; } }
+      catch(e){fail++}
+      done++;
+    }));
+    bar.firstElementChild.style.width=Math.round(done/files.length*100)+'%';
+    txt.textContent=`${done}/${files.length} imágenes`+(fail?` (${fail} fallos)`:'');
+  }
+  toast(fail?'Descarga completada con fallos':'✅ Diagramas disponibles offline');
+}
+
+// ============================== utilidades UI ==============================
+function getOverlay(){
+  let d=document.getElementById('detail');
+  if(!d){d=document.createElement('div');d.id='detail';document.body.appendChild(d);}
+  return d;
+}
+function closeDetail(){const d=document.getElementById('detail'); if(d)d.remove(); destroyPlayer();}
+function openZoom(src){ openZoomHTML(`<img src="${src}">`); }
+function openZoomHTML(html){
+  let z=document.getElementById('zoom'); if(z)z.remove();
+  z=document.createElement('div'); z.id='zoom';
+  z.innerHTML=html+`<button class="btn x" onclick="document.getElementById('zoom').remove()">✕ Cerrar</button>`;
+  z.onclick=e=>{if(e.target===z)z.remove()};
+  document.body.appendChild(z);
+}
+function listTitle(k){const l=DB.lists.find(l=>l.key===k);return l?l.title:k}
+function esc(s){return (s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function md(s){ // mini-markdown: negrita, títulos, enlaces
+  let h=esc(s||'');
+  h=h.replace(/\[([^\]]+)\]\((https?:[^\s)]+)[^)]*\)/g,'<a href="$2" target="_blank" style="color:#7db4ff">$1</a>');
+  h=h.replace(/(^|[\s(])(https?:\/\/[^\s<)]+)/g,'$1<a href="$2" target="_blank" style="color:#7db4ff">$2</a>');
+  h=h.replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>');
+  h=h.replace(/^#{1,4}\s*(.+)$/gm,'<b style="color:#e8edf7">$1</b>');
+  return h;
+}
+function cardTitle(c){
+  if(/\.(png|jpe?g|webp)$/i.test(c.name)||/^image\b/i.test(c.name)){
+    const l=listTitle(c.list).split('·')[0].trim();
+    return l+' · '+c.id.replace('c','#');
+  }
+  return c.name;
+}
+function toast(t){const e=document.createElement('div');e.className='toast';e.textContent=t;document.body.appendChild(e);setTimeout(()=>e.remove(),2500)}
+
+// ============================== arranque ==============================
+loadP(); loadF();
+fetch('data.json').then(r=>r.json()).then(j=>{DB=j; updateDue(); render();})
+  .catch(e=>{$('#main').innerHTML='<p class="mut">Error cargando datos: '+e+'</p>'});
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+</script>
+</body>
+</html>
