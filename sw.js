@@ -29,7 +29,7 @@ self.addEventListener('fetch', e => {
   } else {
     // shell: red primero (para actualizaciones), cache como fallback
     e.respondWith(
-      fetch(e.request).then(r => {
+      fetch(e.request, {cache:'no-cache'}).then(r => {
         const copy = r.clone();
         caches.open(SHELL).then(c => c.put(e.request, copy));
         return r;
