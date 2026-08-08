@@ -433,9 +433,13 @@ function openCardDetail(c,fromTrainer){
     ${c.videos.length?`<div class="h2">Vídeos</div><div class="chips">${c.videos.map((v,i)=>`<span class="chip" onclick="openCardVideo('${v}')">▶ Vídeo ${i+1}</span>`).join('')}</div>`:''}
     ${nseq.length?`<div class="h2">Secuencias de entrenamiento (${nseq.length})</div>
       <button class="btn blue" style="width:100%" id="cd-train">🎬 Entrenar estas secuencias</button>`:''}
+    <div class="row" style="margin-top:16px"><button class="btn ghost" id="cd-prev">← Anterior</button><button class="btn ghost" id="cd-next">Siguiente →</button></div>
   </div>`;
   $('#cd-x').onclick=()=>{ if(fromTrainer){ d.remove(); } else { closeDetail(); render(); } };
   if(nseq.length) $('#cd-train').onclick=()=>{SESSION=shuffle(nseq.map(s=>({t:'seq',id:s.id})));SESSIONIDX=0;showSessionItem()};
+  const sib=DB.cards.filter(x=>x.list===c.list); const ci=sib.findIndex(x=>x.id===c.id);
+  $('#cd-prev').onclick=()=>openCardDetail(sib[(ci-1+sib.length)%sib.length],fromTrainer);
+  $('#cd-next').onclick=()=>openCardDetail(sib[(ci+1)%sib.length],fromTrainer);
   window.scrollTo(0,0);
 }
 
