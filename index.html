@@ -269,11 +269,11 @@ function openFlashcard(c){
   <div class="head"><button class="backbtn" id="fc-x">✕</button>
     <div><div class="t">${esc(cardTitle(c))}</div><div class="mut">${listTitle(c.list)} · ${SESSIONIDX+1}/${SESSION.length}</div></div></div>
   <div class="body">
-    ${cover?`<div class="imgstrip" style="overflow:hidden"><img id="fc-cover" class="blurimg" src="img/${cover.f}"></div>`:''}
+    ${cover?`<div class="imgstrip"><img id="fc-cover" src="img/${cover.f}" onclick="openZoom(this.src)"></div>`:''}
     <div class="pillrow">${c.labels.map(l=>`<span class="lbl ${l}">${esc(l)}</span>`).join('')}</div>
     <div id="fc-q" style="margin-top:6px">
-      <p class="mut">Se intuye la posición, pero no el sistema. ¿Recuerdas cómo se juega? Cálculo, efecto, velocidad, zona de llegada…</p>
-      <button class="btn acc" style="width:100%" id="fc-show">Mostrar solución</button>
+      <p class="mut">Estudia el diagrama y recita de memoria: cálculo, efecto, cantidad de bola, velocidad y colocación de B2. Después comprueba con las notas.</p>
+      <button class="btn acc" style="width:100%" id="fc-show">Comprobar notas</button>
     </div>
     <div id="fc-a" class="hidden">
       ${c.desc?`<div class="h2">Sistema</div><div class="desc">${md(c.desc)}</div>`:''}
@@ -290,7 +290,6 @@ function openFlashcard(c){
   $('#fc-x').onclick=()=>{closeDetail(); switchTab('train')};
   $('#fc-show').onclick=()=>{
     $('#fc-q').classList.add('hidden');$('#fc-a').classList.remove('hidden');
-    const cv=$('#fc-cover'); if(cv){cv.classList.remove('blurimg');cv.style.pointerEvents='';cv.onclick=()=>openZoom(cv.src);}
   };
   ['g0','g1','g2'].forEach((id,g)=>$('#'+id).onclick=()=>{grade(c.id,g);SESSIONIDX++;showSessionItem()});
   window.scrollTo(0,0);
