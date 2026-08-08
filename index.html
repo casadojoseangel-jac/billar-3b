@@ -331,6 +331,8 @@ function openSeqTrainer(s){
   playClip(s.v,s.ps,s.pe);
   $('#sq-tap').onclick=()=>{ if(!ytPlayer||typeof ytPlayer.getPlayerState!=='function') return; const st=ytPlayer.getPlayerState(); if(st===YT.PlayerState.PLAYING){ ytPlayer.pauseVideo(); $('#sq-play').style.display='flex'; } else { ytPlayer.playVideo(); $('#sq-play').style.display='none'; } };
   window.__syncPlayBtn=()=>{ const b=$('#sq-play'); if(!b) return; const st=ytPlayer&&typeof ytPlayer.getPlayerState==='function'?ytPlayer.getPlayerState():-1; b.style.display = st===YT.PlayerState.PLAYING ? 'none':'flex'; };
+  if(window.__syncTimer) clearInterval(window.__syncTimer);
+  window.__syncTimer=setInterval(()=>{ if(document.getElementById('sq-play')) window.__syncPlayBtn(); else clearInterval(window.__syncTimer); },700);
   $('#sq-x').onclick=()=>{closeDetail();destroyPlayer();switchTab('train')};
   $('#sq-rep').onclick=()=>{ const m=playerMode==='pos'; playClip(s.v, m?s.ps:s.ss, m?s.pe:s.se); };
   $('#sq-sol').onclick=()=>{
