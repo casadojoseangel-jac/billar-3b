@@ -88,6 +88,8 @@ main{padding:0 14px;max-width:760px;margin:0 auto}
 .progressbar>div{height:100%;background:var(--acc);width:0%}
 .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#000c;border:1px solid var(--line);padding:9px 16px;border-radius:99px;font-size:13px;z-index:70}
 input[type=search]{width:100%;background:var(--card);border:1px solid var(--line);border-radius:10px;color:var(--text);padding:11px 13px;font-size:14px;outline:none}
+.vtap{position:absolute;inset:0;z-index:4;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.vtap .vplay{width:70px;height:70px;border-radius:50%;background:#31c48dee;display:flex;align-items:center;justify-content:center;font-size:30px;color:#07130d;pointer-events:none}
 </style>
 </head>
 <body>
@@ -166,8 +168,8 @@ function playClip(vid,start,end){
   const create=()=>{
     if(ytPlayer){ ytPlayer.loadVideoById({videoId:vid,startSeconds:start,endSeconds:end}); return;}
     ytPlayer=new YT.Player('ytp',{width:'100%',height:'100%',
-      playerVars:{playsinline:1,controls:1,rel:0,modestbranding:1},
-      events:{onReady:()=>ytPlayer.loadVideoById({videoId:vid,startSeconds:start,endSeconds:end})}});
+      playerVars:{playsinline:1,controls:0,rel:0,modestbranding:1,iv_load_policy:3,fs:0,disablekb:1},
+      events:{onReady:()=>ytPlayer.loadVideoById({videoId:vid,startSeconds:start,endSeconds:end}),onStateChange:()=>{ if(window.__syncPlayBtn) window.__syncPlayBtn(); }}});
   };
   ensureYT(create);
 }
@@ -306,7 +308,7 @@ function openSeqTrainer(s){
     <div><div class="t">${card?esc(cardTitle(card)):'Jugada '+s.id.slice(1)}</div>
     <div class="mut">${card?listTitle(card.list)+' · ':''}${s.src} · ${SESSIONIDX+1}/${SESSION.length||1}</div></div></div>
   <div class="body">
-    <div class="vwrap"><div id="ytp"></div></div>
+    <div class="vwrap"><div id="ytp"></div><div class="vtap" id="sq-tap"><div class="vplay" id="sq-play">▶</div></div></div>
     <div class="pillrow">
       <span class="pill" id="sq-mode">POSICIÓN</span>
       <span class="stars">${'★'.repeat(s.lvl||1)}</span>
@@ -327,6 +329,8 @@ function openSeqTrainer(s){
     </div>
   </div>`;
   playClip(s.v,s.ps,s.pe);
+  $('#sq-tap').onclick=()=>{ if(!ytPlayer||typeof ytPlayer.getPlayerState!=='function') return; const st=ytPlayer.getPlayerState(); if(st===YT.PlayerState.PLAYING){ ytPlayer.pauseVideo(); $('#sq-play').style.display='flex'; } else { ytPlayer.playVideo(); $('#sq-play').style.display='none'; } };
+  window.__syncPlayBtn=()=>{ const b=$('#sq-play'); if(!b) return; const st=ytPlayer&&typeof ytPlayer.getPlayerState==='function'?ytPlayer.getPlayerState():-1; b.style.display = st===YT.PlayerState.PLAYING ? 'none':'flex'; };
   $('#sq-x').onclick=()=>{closeDetail();destroyPlayer();switchTab('train')};
   $('#sq-rep').onclick=()=>{ const m=playerMode==='pos'; playClip(s.v, m?s.ps:s.ss, m?s.pe:s.se); };
   $('#sq-sol').onclick=()=>{
