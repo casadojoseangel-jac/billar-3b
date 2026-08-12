@@ -131,7 +131,7 @@ function grade(k,g){ // g: 0 otra vez, 1 difícil, 2 bien
   if(g===0){s.l++; s.i=0; s.due=now+600000; }
   else if(g===1){s.i=Math.max(1,Math.round((s.i||1)*1.2)); s.e=Math.max(1.5,s.e-.15); s.due=now+s.i*DAY;}
   else{s.i=s.i?Math.round(s.i*s.e):1; s.e=Math.min(2.8,s.e+.05); s.due=now+s.i*DAY;}
-  s.r++; s.last=now; P[k]=s; saveP(); updateDue();
+  s.r++; s.g=g; s.last=now; P[k]=s; saveP(); updateDue();
 }
 function dueItems(){
   const now=Date.now(); const out=[];
@@ -169,7 +169,7 @@ function playClip(vid,start,end){
     if(ytPlayer){ ytPlayer.loadVideoById({videoId:vid,startSeconds:start,endSeconds:end}); return;}
     ytPlayer=new YT.Player('ytp',{width:'100%',height:'100%',
       playerVars:{playsinline:1,controls:0,rel:0,modestbranding:1,iv_load_policy:3,fs:0,disablekb:1},
-      events:{onReady:()=>ytPlayer.loadVideoById({videoId:vid,startSeconds:start,endSeconds:end}),onStateChange:()=>{ if(window.__syncPlayBtn) window.__syncPlayBtn(); }}});
+      events:{onReady:()=>ytPlayer.loadVideoById({videoId:vid,startSeconds:start,endSeconds:end}),onStateChange:()=>{ try{ytPlayer.unloadModule('captions');ytPlayer.unloadModule('cc')}catch(e){}; if(window.__syncPlayBtn) window.__syncPlayBtn(); }}});
   };
   ensureYT(create);
 }
@@ -214,6 +214,7 @@ function renderTrain(m){
   const due=dueItems().length;
   const nc=DB.cards.filter(cardPassesFilter).length;
   const ns=DB.seqs.filter(seqPassesFilter).length;
+  const nf=Object.keys(P).filter(k=>P[k].g!==undefined&&P[k].g<2).length;
   m.innerHTML=`
   <div class="cardbox">
     <div class="grid2">
@@ -230,11 +231,15 @@ function renderTrain(m){
     <button class="btn blue" id="b-rndsys">🎲 Sistemas (${nc})</button>
     <button class="btn blue" id="b-rndvid">🎬 Vídeos (${ns})</button>
   </div>
+  <div class="row" style="margin-top:10px">
+    <button class="btn" style="background:#7f1d1d" id="b-fails">🔁 Fallos y dudosas (${nf})</button>
+  </div>
   <p class="mut" style="margin-top:14px">El repaso inteligente prioriza lo pendiente y mezcla flashcards de sistemas con secuencias de vídeo. Marca al final de cada jugada si la sabías: la app se encarga de volver a mostrártela en el momento justo.</p>`;
   bindChips(()=>renderTrain(m));
   $('#b-smart').onclick=()=>startSession('smart');
   $('#b-rndsys').onclick=()=>startSession('sys');
   $('#b-rndvid').onclick=()=>startSession('vid');
+  $('#b-fails').onclick=()=>startSession('fails');
 }
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 function startSession(kind){
@@ -246,6 +251,12 @@ function startSession(kind){
     const fresh=[]; // intercalar
     while((newSys.length||newSeq.length)&&fresh.length<40){ if(newSeq.length)fresh.push(newSeq.pop()); if(newSys.length)fresh.push(newSys.pop()); }
     items=due.concat(fresh).slice(0,50);
+  }else if(kind==='fails'){
+    items=shuffle(Object.keys(P).filter(k=>P[k].g!==undefined&&P[k].g<2).map(k=>{
+      if(k[0]==='c'&&DB.cards.find(c=>c.id===k)) return {t:'card',id:k};
+      if(k[0]==='s'&&DB.seqs.find(s=>s.id===k)) return {t:'seq',id:k};
+      return null;
+    }).filter(Boolean));
   }else if(kind==='sys'){
     items=shuffle(DB.cards.filter(cardPassesFilter).map(c=>({t:'card',id:c.id}))).slice(0,50);
   }else{
@@ -308,7 +319,7 @@ function openSeqTrainer(s){
     <div><div class="t">${card?esc(cardTitle(card)):'Jugada '+s.id.slice(1)}</div>
     <div class="mut">${card?listTitle(card.list)+' · ':''}${s.src} · ${SESSIONIDX+1}/${SESSION.length||1}</div></div></div>
   <div class="body">
-    <div class="vwrap"><div id="ytp"></div><div class="vtap" id="sq-tap"><div class="vplay" id="sq-play">▶</div></div></div>
+    <div class="vwrap"><div id="ytp"></div><div class="vtap" id="sq-tap"></div></div>
     <div class="pillrow">
       <span class="pill" id="sq-mode">POSICIÓN</span>
       <span class="stars">${'★'.repeat(s.lvl||1)}</span>
@@ -316,7 +327,9 @@ function openSeqTrainer(s){
     </div>
     <div class="row">
       <button class="btn acc" id="sq-sol">Ver solución</button>
+      <button class="btn ghost" id="sq-pp" style="flex:0 0 54px">▶</button>
       <button class="btn ghost" id="sq-rep" style="flex:0 0 54px">↻</button>
+      <button class="btn blue" id="sq-nx" style="flex:0 0 54px">→</button>
     </div>
     <div id="sq-notes" class="notes hidden"></div>
     <div class="gradebtns hidden" id="sq-grades">
@@ -329,17 +342,25 @@ function openSeqTrainer(s){
     </div>
   </div>`;
   playClip(s.v,s.ps,s.pe);
-  $('#sq-tap').onclick=()=>{ if(!ytPlayer||typeof ytPlayer.getPlayerState!=='function') return; const st=ytPlayer.getPlayerState(); if(st===YT.PlayerState.PLAYING){ ytPlayer.pauseVideo(); $('#sq-play').style.display='flex'; } else { ytPlayer.playVideo(); $('#sq-play').style.display='none'; } };
-  window.__syncPlayBtn=()=>{ const b=$('#sq-play'); if(!b) return; const st=ytPlayer&&typeof ytPlayer.getPlayerState==='function'?ytPlayer.getPlayerState():-1; b.style.display = st===YT.PlayerState.PLAYING ? 'none':'flex'; };
+  const ppSync=()=>{ const b=$('#sq-pp'); if(!b) return; const st=ytPlayer&&typeof ytPlayer.getPlayerState==='function'?ytPlayer.getPlayerState():-1; b.textContent = st===YT.PlayerState.PLAYING ? '⏸' : '▶'; };
+  const ppToggle=()=>{ if(!ytPlayer||typeof ytPlayer.getPlayerState!=='function') return; const st=ytPlayer.getPlayerState(); if(st===YT.PlayerState.PLAYING) ytPlayer.pauseVideo(); else ytPlayer.playVideo(); setTimeout(ppSync,300); };
+  $('#sq-tap').onclick=ppToggle;
+  $('#sq-pp').onclick=ppToggle;
+  $('#sq-nx').onclick=()=>{SESSIONIDX++;destroyPlayer();showSessionItem()};
+  window.__syncPlayBtn=ppSync;
   if(window.__syncTimer) clearInterval(window.__syncTimer);
-  window.__syncTimer=setInterval(()=>{ if(document.getElementById('sq-play')) window.__syncPlayBtn(); else clearInterval(window.__syncTimer); },700);
+  window.__syncTimer=setInterval(()=>{ if(document.getElementById('sq-pp')) window.__syncPlayBtn(); else clearInterval(window.__syncTimer); },700);
   $('#sq-x').onclick=()=>{closeDetail();destroyPlayer();switchTab('train')};
   $('#sq-rep').onclick=()=>{ const m=playerMode==='pos'; playClip(s.v, m?s.ps:s.ss, m?s.pe:s.se); };
   $('#sq-sol').onclick=()=>{
     if(playerMode==='pos'){
       playerMode='sol'; $('#sq-mode').textContent='SOLUCIÓN'; $('#sq-sol').textContent='Ver posición';
       playClip(s.v,s.ss,s.se);
-      if(s.notes){$('#sq-notes').textContent=s.notes;$('#sq-notes').classList.remove('hidden')}
+      let nh='';
+      if(s.notes) nh+='<div>'+md(s.notes)+'</div>';
+      if(card&&card.desc) nh+='<div style="font-weight:700;color:#e8edf7;margin:10px 0 6px">📋 Sistema (Trello)</div><div>'+md(card.desc)+'</div>';
+      if(card&&card.comments&&card.comments.length) nh+='<div style="font-weight:700;color:#e8edf7;margin:10px 0 6px">💬 Comentarios</div>'+card.comments.map(t=>'<div class="comment">'+md(t)+'</div>').join('');
+      if(nh){$('#sq-notes').innerHTML=nh;$('#sq-notes').classList.remove('hidden')}
       $('#sq-grades').classList.remove('hidden');
     }else{
       playerMode='pos'; $('#sq-mode').textContent='POSICIÓN'; $('#sq-sol').textContent='Ver solución';
