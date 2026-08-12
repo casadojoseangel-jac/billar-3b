@@ -331,7 +331,6 @@ function openSeqTrainer(s){
       <button class="btn ghost" id="sq-rep" style="flex:0 0 54px">↻</button>
       <button class="btn blue" id="sq-nx" style="flex:0 0 54px">→</button>
     </div>
-    <div id="sq-notes" class="notes hidden"></div>
     <div class="gradebtns hidden" id="sq-grades">
       <button class="btn gb-again" id="sg0">✗ Fallo</button>
       <button class="btn gb-hard" id="sg1">~ Dudosa</button>
@@ -340,6 +339,7 @@ function openSeqTrainer(s){
     <div class="row" style="margin-top:10px">
       <button class="btn" id="sq-next">Saltar →</button>
     </div>
+    <div id="sq-notes" class="notes hidden"></div>
   </div>`;
   playClip(s.v,s.ps,s.pe);
   const ppSync=()=>{ const b=$('#sq-pp'); if(!b) return; const st=ytPlayer&&typeof ytPlayer.getPlayerState==='function'?ytPlayer.getPlayerState():-1; b.textContent = st===YT.PlayerState.PLAYING ? '⏸' : '▶'; };
